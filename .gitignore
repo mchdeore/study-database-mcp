@@ -216,3 +216,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Study DB MCP: user material + generated artifacts ---------------------
+# Keep the directory structure (.gitkeep) but ignore contents.
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/README.md
+data/corpus/*
+!data/corpus/.gitkeep
+data/vector_store/*
+!data/vector_store/.gitkeep
+data/graph/*
+!data/graph/.gitkeep
+data/manifest.json

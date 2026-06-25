@@ -1,0 +1,16 @@
+{
+  "//": "Copy the two entries below into your Claude Desktop config's mcpServers block.",
+  "//macos": "~/Library/Application Support/Claude/claude_desktop_config.json",
+  "//windows": "%APPDATA%\\Claude\\claude_desktop_config.json",
+  "//note": "Replace ABSOLUTE_REPO_PATH with the full path to this repo, and use the venv's python so the servers see their dependencies.",
+  "mcpServers": {
+    "calculator": {
+      "command": "ABSOLUTE_REPO_PATH/.venv/bin/python",
+      "args": ["ABSOLUTE_REPO_PATH/servers/calculator/server.py", "--stdio"]
+    },
+    "knowledge": {
+      "command": "ABSOLUTE_REPO_PATH/.venv/bin/python",
+      "args": ["ABSOLUTE_REPO_PATH/servers/knowledge/server.py", "--stdio"]
+    }
+  }
+}

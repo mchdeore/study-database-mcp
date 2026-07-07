@@ -1,4 +1,9 @@
-# Study Database MCP
+# Life Vault MCP
+
+> Formerly **Study Database MCP**. Being evolved into a self-hosted personal
+> knowledge system — see [`docs/vision/`](docs/vision/README.md) for the vision,
+> scope, and architecture. The study-focused docs below describe the current,
+> working servers that the larger system builds on.
 
 Two independent [MCP](https://modelcontextprotocol.io) servers that make Claude a
 reliable study partner:
@@ -94,6 +99,63 @@ The light concept graph handles synthesis at near-zero cost; only enable GraphRA
 per-subject if cross-cutting questions prove frequent (it adds per-chunk LLM calls
 at index time and per-query token cost).
 
+## Catalog (your SCHOOL folder)
+
+A lightweight index of everything in your `SCHOOL/` folder (organized by course
+code), so Claude can answer "what do I have for MATH225" and locate the exact
+slide deck / past exam / formula sheet during a cram session.
+
+It's a single **SQLite** file at `data/catalog.db` — no server, no Docker. For a
+few hundred files on one laptop, `sqlite3` (stdlib) is faster to query and zero
+ops; Postgres-in-a-container would add overhead with no benefit at this scale.
+It's still SQL — open `data/catalog.db` in any SQL tool.
+
+Point it at your folder (defaults to `~/Documents/SCHOOL`):
+
+```bash
+# .env
+SCHOOL_DIR=~/Documents/SCHOOL
+CATALOG_DOC_EXTS=.pdf,.docx,.pptx,.md,.markdown   # what counts as a "document"
+```
+
+```bash
+python scripts/catalog.py                 # incremental scan (default)
+python scripts/catalog.py --full          # re-hash + re-derive names/types
+python scripts/catalog.py --stats         # totals by course and type
+python scripts/catalog.py --list MATH225  # list a course's documents
+python scripts/catalog.py --duplicates           # byte-identical copies
+python scripts/catalog.py --possible-duplicates  # same title, different bytes
+python scripts/catalog.py --plan-renames         # preview descriptive renames
+python scripts/catalog.py --apply-renames        # rename files (reversible)
+python scripts/catalog.py --undo-renames         # revert the last rename batch
+```
+
+What a scan does, incrementally and safe to re-run:
+
+- **One entry per unique document.** Identity is the SHA-256 of the file's bytes.
+  A `(size, mtime)` gate skips unchanged known files without re-hashing.
+- **Dedup.** A byte-identical copy elsewhere is recorded as a *duplicate* of the
+  one canonical entry (never a second row). `--possible-duplicates` also flags
+  same-title files with different bytes (e.g. two scans of the same textbook) for
+  you to judge — it never auto-deletes. `--delete-duplicate-files --yes` removes
+  the redundant copies (keeps the canonical) only when you explicitly ask.
+- **Descriptive names.** Prefers a clean filename (`4.3 Bases and Dimension`),
+  falls back to the PDF's embedded title or first page for cryptic names
+  (`griffiths_4ed.pdf` → `Introduction to Electrodynamics`). A heuristic tags each
+  doc: textbook / slides / exam / solutions / formula-sheet / manual / assignment /
+  notes. Stored on every entry; **renaming files on disk is opt-in and reversible**
+  (`--apply-renames` writes a log; `--undo-renames` reverts).
+- **Skips noise.** Virtualenvs, `.git`, `__pycache__`, hidden files, and
+  non-document types are ignored, so a course folder full of code/data doesn't
+  pollute the catalog.
+
+Query tools (exposed by the knowledge MCP server, for use mid-session):
+`list_courses`, `find_documents(query, course="")`, `catalog_stats`.
+
+`tests/check_catalog.py` is the offline self-check (no deps/network): exclusion
+rules, dedup, descriptive naming/typing, incremental rescan, edit-in-place, the
+queries, and a rename apply/undo round-trip.
+
 ## Register with Claude Desktop
 
 See `claude_desktop_config.example.json`. Use the venv's Python and absolute
@@ -108,6 +170,47 @@ paths, e.g.:
 }
 ```
 
+## Using with Cowork
+
+[Claude Cowork](https://claude.com/product/claude-cowork) is the desktop agent
+that works directly on your local files — ideal for "build me a study guide from
+my MATH225 slides" while you step away. Cowork shares Claude Desktop's config, so
+the same two local servers work; the **catalog** then gives the agent a fast map
+of your SCHOOL folder instead of crawling it every time.
+
+**1. Connect the servers.** Merge `cowork_config.example.json` into your Desktop
+config (Settings → Developer → Edit Config). It's the same `mcpServers` block plus
+Cowork switches (`coworkScheduledTasksEnabled`, `coworkWebSearchEnabled`).
+
+**2. Install the Skills.** The `skills/` folder holds two
+[Agent Skills](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills)
+(portable `SKILL.md` folders that auto-load when relevant):
+
+- **`exact-math`** — routes *every* calculation through the `calculator` server,
+  so worked examples in your study guides are exact, not hand-computed guesses.
+- **`study-assistant`** — orchestrates the catalog + knowledge + calculator tools
+  into cram deliverables (study guide, practice exam, organize-the-folder).
+
+Add them via **Customize → Skills** (zip each skill's folder and upload), or drop
+them in your Claude Code skills directory. They follow the open Agent Skills
+standard, so they're portable across Cowork and Claude Code.
+
+**3. Build the catalog once** (`python scripts/catalog.py`) so `find_documents`
+and friends have data, then just ask:
+
+```
+"What do I have for PHYS234, and which are past exams?"
+"Build a study guide for the MATH225 midterm from my slides — verify every
+ worked example with the calculator and cite the source slide."
+"Make a practice exam from my PHYS234 past tests, with a checked answer key."
+"Find duplicate and near-duplicate files in SCHOOL and propose descriptive
+ renames (don't apply them yet)."
+```
+
+With scheduled tasks on, you can also have Cowork re-scan SCHOOL and reindex new
+notes weekly and report what changed. Everything runs locally by default; switching
+on the OpenAI embedder or a VLM PDF converter sends document content to a cloud API.
+
 ## Tests
 
 ```bash
@@ -116,6 +219,7 @@ paths, e.g.:
 .venv/bin/python tests/check_knowledge.py      # chunker, incremental, citations, graph
 .venv/bin/python tests/test_edge_cases.py      # tool boundaries, error-quality, timeouts, timing
 .venv/bin/python tests/test_knowledge_edges.py # chunker corners, reindex, persistence, cross-refs
+.venv/bin/python tests/check_catalog.py        # SCHOOL catalog: dedup, naming, rescan, rename undo
 .venv/bin/python tests/test_perf.py            # scale: ingest/search/graph timing on a synthetic corpus
 
 # Require optional backends (install the matching extras first):

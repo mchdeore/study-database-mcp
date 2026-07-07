@@ -59,6 +59,8 @@ def paths() -> Dict[str, Path]:
         "vector_store": d / "vector_store",
         "graph": d / "graph",
         "manifest": d / "manifest.json",
+        "catalog": d / "catalog.db",
+        "rename_log": d / "catalog_renames.json",
     }
 
 
@@ -72,6 +74,47 @@ def config() -> Dict[str, Any]:
         "chunk_overlap_ratio": float(os.environ.get("CHUNK_OVERLAP_RATIO", "0.10")),
         "search_top_k": int(os.environ.get("SEARCH_TOP_K", "8")),
         "enable_graphrag": os.environ.get("ENABLE_GRAPHRAG", "false").lower() == "true",
+        # The "backend librarian": server-side models that maintain the index
+        # when GraphRAG is on. Split by role so the reliability premium is paid
+        # only where it buys something (see docs/vision/10-cost.md). API keys
+        # are NOT here -- they live in the encrypted credential store, looked up
+        # by `api_key_name` (see servers/vault/credentials.py). Both endpoints
+        # are OpenAI-compatible.
+        "librarian": {
+            # Agentic role: drives the MCP tools, dedup/regroup decisions, and
+            # query-time context-packing. Reliability matters most -> Kimi K2
+            # (leads MCP tool-use benchmarks). Low token volume, so the premium
+            # is cheap in absolute terms.
+            "agentic": {
+                "model": os.environ.get("LLM_AGENTIC_MODEL", "kimi-k2.7-code"),
+                "base_url": os.environ.get(
+                    "LLM_AGENTIC_BASE_URL", "https://api.moonshot.ai/v1"
+                ),
+                "api_key_name": os.environ.get(
+                    "LLM_AGENTIC_KEY_NAME", "moonshot_api_key"
+                ),
+            },
+            # Extraction role: high-volume, mechanical per-chunk entity/relation
+            # extraction -- the cost that scales with database size. Cost-first
+            # -> DeepSeek V4 Flash (cheapest capable, tiny cache-hit price).
+            "extraction": {
+                "model": os.environ.get("LLM_EXTRACTION_MODEL", "deepseek-v4-flash"),
+                "base_url": os.environ.get(
+                    "LLM_EXTRACTION_BASE_URL", "https://api.deepseek.com/v1"
+                ),
+                "api_key_name": os.environ.get(
+                    "LLM_EXTRACTION_KEY_NAME", "deepseek_api_key"
+                ),
+            },
+        },
+        # Catalog: the folder of school material to index, and which file types
+        # count as "documents" (everything else -- code, data, venvs -- is skipped).
+        "school_dir": os.environ.get(
+            "SCHOOL_DIR", str(Path.home() / "Documents" / "SCHOOL")
+        ),
+        "catalog_doc_exts": os.environ.get(
+            "CATALOG_DOC_EXTS", ".pdf,.docx,.pptx,.md,.markdown"
+        ),
     }
 
 

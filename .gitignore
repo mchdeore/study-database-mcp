@@ -229,3 +229,19 @@ data/vector_store/*
 data/graph/*
 !data/graph/.gitkeep
 data/manifest.json
+# Catalog of the SCHOOL folder (SQLite + rename log) -- holds personal file paths
+data/catalog.db
+data/catalog.db-wal
+data/catalog.db-shm
+data/catalog_renames.json
+
+# --- Life Vault MCP: the personal vault + its derived index ----------------
+# The vault is YOUR data and the .vault/ index is generated -- never commit
+# either to this code repo. (Your own vault should be its own git repo.)
+/vault/
+
+# Personal ingested data (connector/import staging) + local DB sidecars/backups.
+# Never commit to the code repo -- it holds personal school/email/finance content.
+data/incoming/
+data/catalog.db-journal
+data/*.bak-*

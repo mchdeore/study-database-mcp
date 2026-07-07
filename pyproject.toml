@@ -1,7 +1,7 @@
 [project]
-name = "study-database-mcp"
+name = "life-vault-mcp"
 version = "0.1.0"
-description = "Two MCP servers for reliable studying: a deterministic calculator and a hybrid (vector + light graph) knowledge retriever."
+description = "Self-hosted personal knowledge MCP: ingests files + connectors into an auditable Markdown vault, indexed in a self-pruning relational DB with hybrid (vector + graph) search. Bundles a deterministic calculator server."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -39,6 +39,19 @@ embeddings-local = ["sentence-transformers>=3.0.0"]
 store-lancedb = ["lancedb>=0.13.0", "pyarrow>=16.0.0"]
 store-chroma = ["chromadb>=0.5.0"]
 
+# Vault relational index backend: Postgres + pgvector (pick via VAULT_DB=postgres).
+# The default VAULT_DB=sqlite backend is stdlib-only and needs nothing extra.
+store-postgres = ["psycopg[binary]>=3.1.0", "pgvector>=0.2.5"]
+
+# Authenticated HTTP serving (Phase 2): encrypted secrets + the ASGI server.
+# (Starlette/uvicorn ship with mcp, but uvicorn is pinned here for clarity.)
+serve = ["cryptography>=42.0.0", "uvicorn>=0.30.0", "httpx>=0.27.0"]
+
+# Google connectors (Phase 4.1): OAuth consent + token refresh for read-only
+# Calendar + Gmail ingestion. google-auth-oauthlib pulls google-auth and requests;
+# the thin REST fetch layer reuses requests, so this is the only name we add.
+connectors-google = ["google-auth-oauthlib>=1.2.0"]
+
 # Optional PDF -> Markdown converters (pick via PDF_CONVERTER)
 pdf-pymupdf = ["pymupdf4llm>=0.0.17"]
 pdf-marker = ["marker-pdf>=1.0.0"]
@@ -49,13 +62,20 @@ graphrag = ["graphrag>=0.3.0"]
 dev = ["pytest>=8.0.0"]
 
 [project.scripts]
-study-calculator = "servers.calculator.server:main"
-study-knowledge = "servers.knowledge.server:main"
-study-reindex = "scripts.reindex:main"
+life-calculator = "servers.calculator.server:main"
+life-knowledge = "servers.knowledge.server:main"
+life-reindex = "scripts.reindex:main"
+life-catalog = "scripts.catalog:main"
+life-vault-index = "scripts.vault_index:main"
+life-vault-schedule = "scripts.vault_schedule:main"
+life-vault-sync = "scripts.vault_sync:main"
+life-vault-import = "scripts.vault_import:main"
+life-vault-web = "scripts.vault_web:main"
+life-vault = "servers.vault.server:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["servers", "servers.calculator", "servers.knowledge", "scripts"]
+packages = ["servers", "servers.calculator", "servers.knowledge", "servers.vault", "scripts"]

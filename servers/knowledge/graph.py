@@ -224,8 +224,15 @@ def run_graphrag(query: str) -> Dict:
     makes note edits expensive to reindex -- which is why it is off by default and
     never the primary path. Wire a real implementation here per-subject only if
     cross-cutting synthesis questions prove frequent.
+
+    When built, use the hybrid librarian from config()["librarian"]: the cheap
+    EXTRACTION model (DeepSeek V4 Flash) for the high-volume per-chunk entity/
+    relation extraction, and the AGENTIC model (Kimi K2) for tool orchestration,
+    dedup/regroup decisions, and query-time context-packing. Both are OpenAI-
+    compatible (base_url + api_key resolved from the credential store by name).
     """
     raise NotImplementedError(
         "Full GraphRAG is gated off. Set ENABLE_GRAPHRAG=true and implement run_graphrag() "
-        "to enable it; the light concept graph handles synthesis by default."
+        "using config()['librarian'] (extraction=DeepSeek, agentic=Kimi); the light "
+        "concept graph handles synthesis by default."
     )

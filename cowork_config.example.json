@@ -1,0 +1,35 @@
+{
+  "//": "Claude Cowork shares Claude Desktop's config file. Merge these blocks in.",
+  "//macos": "~/Library/Application Support/Claude/claude_desktop_config.json",
+  "//windows": "%APPDATA%\\Claude\\claude_desktop_config.json",
+  "//open": "In the app: Settings > Developer > Edit Config.",
+  "//note": "Replace ABSOLUTE_REPO_PATH with the full path to this repo. Use the venv's python so the servers see their dependencies. Restart the app after editing.",
+
+  "//preferences": "Cowork-specific switches: scheduled tasks let Claude re-scan/reindex on a timer; web search lets it look things up while studying.",
+  "preferences": {
+    "coworkScheduledTasksEnabled": true,
+    "coworkWebSearchEnabled": true,
+    "sidebarMode": "task"
+  },
+
+  "mcpServers": {
+    "calculator": {
+      "command": "ABSOLUTE_REPO_PATH/.venv/bin/python",
+      "args": ["ABSOLUTE_REPO_PATH/servers/calculator/server.py", "--stdio"]
+    },
+    "knowledge": {
+      "command": "ABSOLUTE_REPO_PATH/.venv/bin/python",
+      "args": ["ABSOLUTE_REPO_PATH/servers/knowledge/server.py", "--stdio"],
+      "env": {
+        "SCHOOL_DIR": "~/Documents/SCHOOL"
+      }
+    },
+    "vault": {
+      "command": "ABSOLUTE_REPO_PATH/.venv/bin/python",
+      "args": ["ABSOLUTE_REPO_PATH/servers/vault/server.py", "--stdio"],
+      "env": {
+        "VAULT_DIR": "~/life-vault"
+      }
+    }
+  }
+}

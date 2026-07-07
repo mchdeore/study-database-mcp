@@ -32,7 +32,7 @@ from servers.knowledge.chunk import chunk_markdown  # noqa: E402
 from servers.knowledge import ingest as ingest_mod  # noqa: E402
 from servers.knowledge import retrieve as retrieve_mod  # noqa: E402
 from servers.knowledge import graph as graph_mod  # noqa: E402
-from servers.knowledge.store import Manifest, paths  # noqa: E402
+from servers.knowledge.store import Manifest, paths, config  # noqa: E402
 
 
 def ok(cond, msg):
@@ -185,5 +185,20 @@ except NotImplementedError:
 
 rc = graph_mod.related_concepts("Snell's Law")
 ok("concept" in rc or "error" in rc, "related_concepts responds for a known concept")
+
+# --- 6. Hybrid librarian config (agentic=Kimi, extraction=DeepSeek) ---------
+print("hybrid librarian config")
+lib = config()["librarian"]
+ok(lib["agentic"]["model"] == "kimi-k2.7-code",
+   "agentic role defaults to Kimi K2 (MCP tool-use leader)")
+ok(lib["extraction"]["model"] == "deepseek-v4-flash",
+   "extraction role defaults to DeepSeek V4 Flash (cheapest capable)")
+ok(lib["agentic"]["api_key_name"] == "moonshot_api_key"
+   and lib["extraction"]["api_key_name"] == "deepseek_api_key",
+   "each role names a credential-store key (keys never in .env)")
+os.environ["LLM_EXTRACTION_MODEL"] = "qwen-turbo"
+ok(config()["librarian"]["extraction"]["model"] == "qwen-turbo",
+   "extraction model is overridable via env (e.g. swap in Qwen)")
+del os.environ["LLM_EXTRACTION_MODEL"]
 
 print("\nALL KNOWLEDGE CHECKS PASSED")

@@ -40,7 +40,6 @@ _MANDATORY_IGNORES = [
     ".vault/secrets.enc",    # encrypted credential store (belt-and-suspenders)
     ".vault/index.db",       # derived relational index (rebuildable; snapshotted separately)
     ".vault/manifest.json",  # derived content-hash manifest (rebuildable)
-    ".vault/audit.log",      # request audit telemetry (append-only, churns every request)
 ]
 
 

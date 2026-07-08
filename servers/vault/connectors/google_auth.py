@@ -64,7 +64,7 @@ def _client_config() -> Dict[str, Any]:
             "Google OAuth client credentials are not set: " + ", ".join(missing) + ". "
             "Create an OAuth 'Desktop app' client in Google Cloud Console "
             "(APIs & Services -> Credentials), then store them with the set_credential "
-            "tool (or scripts/vault_admin.py). See docs for the exact click-path."
+            "tool. See docs for the exact click-path."
         )
     return {
         "installed": {

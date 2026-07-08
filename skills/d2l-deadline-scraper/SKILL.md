@@ -137,7 +137,7 @@ effective_days = days_until_due × (1 − 0.5 × fear_weight)
 urgency        = 1 / (effective_days + 1)      # higher = do sooner
 ```
 Rank items by urgency; rank courses by their most-urgent item. Compute in a real
-script (don't hand-math — the `exact-math` skill applies). Write `_digest.md` at
+script (don't hand-math — compute it). Write `_digest.md` at
 the root (course priority table + all deadlines soonest-first + a "this week"
 view + an undated/to-verify list) and one `_digest.md` per course folder.
 

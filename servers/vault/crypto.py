@@ -37,7 +37,7 @@ def _fernet_class():
     except Exception as error:  # noqa: BLE001
         raise RuntimeError(
             "secrets encryption needs the 'cryptography' package. "
-            "Install the serve extra: pip install -e \".[serve]\""
+            "Install the crypto extra: pip install -e \".[crypto]\""
         ) from error
 
 

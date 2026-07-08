@@ -1,11 +1,17 @@
 # Life Vault MCP — Vision & Scope
 
-This folder is the single source of truth for **what we are building and why**.
-It describes turning the existing study-database MCP into a self-hosted
-**personal knowledge system** ("my life" MCP): it ingests files and connected
-accounts, parses them into an auditable Markdown vault, indexes that vault in a
-self-pruning relational database with hybrid (vector + graph) search, and serves
-it over a password-protected API you can reach from anywhere.
+> **Scope update (current):** the project is now a lean, local **Life MCP** —
+> a Markdown vault back end + Google Calendar timeline + a knowledge Librarian,
+> served to Claude/Cowork over **MCP stdio only**. Several pieces described in the
+> older vision docs are **descoped** (kept here as history / a documented upgrade
+> path): the calculator + study-math server, the HTTP web dashboard + bearer auth,
+> Docker deployment, and the Postgres+pgvector backend. SQLite is the single
+> backend. See the repo `README.md` for the live scope.
+
+This folder is the historical **vision** for turning the original study-database
+MCP into a self-hosted personal knowledge system. It ingests files and connected
+accounts, parses them into an auditable Markdown vault, and indexes that vault in
+a self-pruning SQLite database with hybrid (vector + lexical) search.
 
 ## The one-paragraph pitch
 

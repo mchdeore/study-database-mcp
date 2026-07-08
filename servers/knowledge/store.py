@@ -189,7 +189,10 @@ class _LocalEmbedder:
         from sentence_transformers import SentenceTransformer  # lazy/heavy
 
         self.model = SentenceTransformer(model_name)
-        self.dim = self.model.get_sentence_embedding_dimension()
+        # sentence-transformers >=5 renamed this; fall back for older versions.
+        _dim = getattr(self.model, "get_embedding_dimension", None) or \
+            self.model.get_sentence_embedding_dimension
+        self.dim = _dim()
 
     def embed(self, texts: List[str]) -> np.ndarray:
         return np.asarray(

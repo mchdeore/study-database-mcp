@@ -13,10 +13,6 @@
   },
 
   "mcpServers": {
-    "calculator": {
-      "command": "ABSOLUTE_REPO_PATH/.venv/bin/python",
-      "args": ["ABSOLUTE_REPO_PATH/servers/calculator/server.py", "--stdio"]
-    },
     "knowledge": {
       "command": "ABSOLUTE_REPO_PATH/.venv/bin/python",
       "args": ["ABSOLUTE_REPO_PATH/servers/knowledge/server.py", "--stdio"],

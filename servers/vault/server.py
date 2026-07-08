@@ -1,9 +1,9 @@
-"""Vault MCP server: the personal-knowledge tools (Phase 1, stdio transport).
+"""Vault MCP server: the personal-knowledge tools (stdio transport).
 
 Read tools (search), write tools (capture / quick_note / append_to_journal),
-inbox triage, index maintenance, and owner-guarded credential setup. HTTP
-transport + auth arrive in Phase 2; for now this runs over stdio like the other
-local servers.
+inbox triage, index maintenance, and owner-guarded credential setup. Runs over
+stdio (local) — the transport Claude Desktop / Cowork speak; there is no
+network/HTTP surface.
 
 Tools:
   vault_status()                          backend + row counts
@@ -34,7 +34,6 @@ from mcp.server.fastmcp import FastMCP
 # launches it), mirroring the knowledge server.
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-    from servers.vault import auth as auth_mod
     from servers.vault import archive as archive_mod
     from servers.vault import capture as capture_mod
     from servers.vault import credentials as secrets_mod
@@ -48,7 +47,6 @@ if __package__ in (None, ""):
     from servers.vault.index import index, rebuild_index
     from servers.vault.search import search, get_note as _get_note, timeline as _timeline
 else:
-    from . import auth as auth_mod
     from . import archive as archive_mod
     from . import capture as capture_mod
     from . import credentials as secrets_mod
@@ -402,51 +400,15 @@ def set_credential(name: str, value: str) -> dict:
         return {"error": str(error)}
 
 
-# Default bind address/port for HTTP serving. 127.0.0.1 is safe by default; set
-# VAULT_HOST to a tailnet IP (or 0.0.0.0 behind Tailscale) for remote access.
-_DEFAULT_HOST = "127.0.0.1"
-_DEFAULT_PORT = 8765
-
-
-# Start the authenticated HTTP server: unlock secrets (refusing to start on a bad
-# master key), wrap the MCP app in the bearer-auth middleware, and run uvicorn.
-def _run_http(host: str, port: int) -> None:
-    import uvicorn
-
-    if __package__ in (None, ""):
-        from servers.vault.auth import BearerAuthMiddleware
-    else:
-        from .auth import BearerAuthMiddleware
-
-    status = secrets_mod.unlock()
-    if status.get("warning"):
-        print(f"WARNING: {status['warning']}", file=sys.stderr)
-    if auth_mod.configured_token_hash() is None:
-        print("WARNING: no API bearer token set; all requests will be rejected. "
-              "Set one: python scripts/vault_admin.py --rotate-token", file=sys.stderr)
-
-    app.settings.host = host
-    app.settings.port = port
-    wrapped_app = BearerAuthMiddleware(app.streamable_http_app())
-    print(f"vault HTTP server on http://{host}:{port}{app.settings.streamable_http_path}",
-          file=sys.stderr)
-    uvicorn.run(wrapped_app, host=host, port=port, log_level="info")
-
-
 def main() -> None:
-    import os
-
-    parser = argparse.ArgumentParser(description="Vault personal-knowledge MCP server")
-    parser.add_argument("--stdio", action="store_true", help="Use STDIO transport (Claude Desktop)")
-    parser.add_argument("--http", action="store_true", help="Use authenticated Streamable HTTP transport")
-    parser.add_argument("--host", default=os.environ.get("VAULT_HOST", _DEFAULT_HOST))
-    parser.add_argument("--port", type=int, default=int(os.environ.get("VAULT_PORT", _DEFAULT_PORT)))
-    args = parser.parse_args()
-
-    if args.http:
-        _run_http(args.host, args.port)
-    else:
-        app.run(transport="stdio")
+    # stdio is the only transport: this server runs locally as a subprocess of
+    # Claude Desktop / Cowork (the "MCP handshake"). The optional --stdio flag is
+    # accepted for config compatibility; there is no network/HTTP surface.
+    parser = argparse.ArgumentParser(description="Vault personal-knowledge MCP server (stdio)")
+    parser.add_argument("--stdio", action="store_true",
+                        help="Use STDIO transport (default; for Claude Desktop / Cowork)")
+    parser.parse_args()
+    app.run(transport="stdio")
 
 
 if __name__ == "__main__":

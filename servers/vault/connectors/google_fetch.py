@@ -83,9 +83,21 @@ def _calendar_sync_from_days() -> int:
         return 30
 
 
+# How far into the FUTURE the initial calendar pull reaches. Bounds open-ended
+# recurring events (e.g. a daily reminder, a yearly birthday) so they can't
+# expand years/decades ahead and flood the vault. Incremental syncs (syncToken)
+# are unaffected.
+def _calendar_sync_to_days() -> int:
+    try:
+        return int(os.environ.get("GOOGLE_CALENDAR_SYNC_TO_DAYS", "365"))
+    except ValueError:
+        return 365
+
+
 # Page through calendar events for one sync. With a syncToken (cursor) Google
 # returns only changes since last time; without one we bound the initial pull to
-# the recent past (future events are always included — there is no timeMax).
+# a window [now - SYNC_FROM_DAYS, now + SYNC_TO_DAYS] so open-ended recurring
+# events can't expand years into the future and pollute the vault.
 def _calendar_pull(
     token: str, sync_token: Optional[str], calendar_id: str, http_get: Callable[..., Dict[str, Any]]
 ) -> FetchResult:
@@ -99,7 +111,9 @@ def _calendar_pull(
             params["syncToken"] = sync_token
         else:
             since = datetime.now(timezone.utc) - timedelta(days=_calendar_sync_from_days())
+            until = datetime.now(timezone.utc) + timedelta(days=_calendar_sync_to_days())
             params["timeMin"] = since.isoformat(timespec="seconds").replace("+00:00", "Z")
+            params["timeMax"] = until.isoformat(timespec="seconds").replace("+00:00", "Z")
             params["orderBy"] = "startTime"
         if page_token:
             params["pageToken"] = page_token

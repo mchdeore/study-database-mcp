@@ -5,10 +5,6 @@
   "//note": "Replace ABSOLUTE_REPO_PATH with the full path to this repo, and use the venv's python so the servers see their dependencies.",
   "//vault": "The 'vault' server is the personal-knowledge RAG (capture / search_vault / get_note / timeline). VAULT_DIR defaults to ABSOLUTE_REPO_PATH/vault; set it to wherever you want your Markdown vault to live.",
   "mcpServers": {
-    "calculator": {
-      "command": "ABSOLUTE_REPO_PATH/.venv/bin/python",
-      "args": ["ABSOLUTE_REPO_PATH/servers/calculator/server.py", "--stdio"]
-    },
     "knowledge": {
       "command": "ABSOLUTE_REPO_PATH/.venv/bin/python",
       "args": ["ABSOLUTE_REPO_PATH/servers/knowledge/server.py", "--stdio"]

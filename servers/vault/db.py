@@ -212,21 +212,12 @@ class VaultDB(ABC):
     def close(self) -> None: ...
 
 
-# Build the configured backend. SQLite is the default; Postgres is selected with
-# VAULT_DB=postgres and needs the store-postgres extra installed.
+# Build the backend. SQLite is the single backend: zero-ops, stdlib, and it
+# already stores chunk embeddings (float32 blobs) for brute-force cosine + BM25
+# hybrid search at personal scale. Postgres+pgvector was removed as app/deploy
+# surface; it's the documented upgrade path if a vault ever outgrows brute-force
+# search (see docs/vision/03-architecture.md).
 def get_db() -> VaultDB:
-    backend = config()["db_backend"]
+    from .db_sqlite import SQLiteVaultDB
 
-    if backend == "sqlite":
-        from .db_sqlite import SQLiteVaultDB
-
-        return SQLiteVaultDB()
-
-    if backend == "postgres":
-        from .db_postgres import PostgresVaultDB
-
-        return PostgresVaultDB()
-
-    raise ValueError(
-        f"unknown VAULT_DB={backend!r}. Set VAULT_DB to 'sqlite' (default) or 'postgres'."
-    )
+    return SQLiteVaultDB()

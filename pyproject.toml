@@ -1,55 +1,46 @@
 [project]
 name = "life-vault-mcp"
 version = "0.1.0"
-description = "Self-hosted personal knowledge MCP: ingests files + connectors into an auditable Markdown vault, indexed in a self-pruning relational DB with hybrid (vector + graph) search. Bundles a deterministic calculator server."
+description = "Self-hosted personal 'Life MCP': a Markdown vault back end + Google Calendar timeline + a knowledge Librarian (hybrid vector + lexical search), served to Claude/Cowork over MCP stdio."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 
-# Base install is intentionally tiny. Each server is installed via its own
-# extra so they stay independently restartable with different failure modes.
+# Base install is intentionally tiny. Each server installs via its own extra so
+# they stay independently restartable with different failure modes.
 dependencies = [
     "mcp>=1.2.0",
 ]
 
 [project.optional-dependencies]
-# --- Calculator server -------------------------------------------------------
-calculator = [
-    "sympy>=1.13.0",
-    "numpy>=1.26.0",
-    "scipy>=1.11.0",
-    "mpmath>=1.3.0",
-    "Pint>=0.23",
-]
-
-# --- Knowledge server: core retrieval (no heavy ML, runs fully offline) ------
-# numpy vector store + hash embeddings let the whole pipeline run and be
-# verified with zero network access or large downloads.
+# --- Knowledge server / the "Librarian": core retrieval (offline-capable) -----
+# numpy vector store + hash embeddings let the whole pipeline run and be verified
+# with zero network access. Install embeddings-local for real semantic search.
 knowledge = [
     "numpy>=1.26.0",
     "networkx>=3.2",
     "python-dotenv>=1.0.0",
 ]
 
-# Optional embedding backends (pick via EMBEDDING_PROVIDER)
-embeddings-openai = ["openai>=1.40.0"]
+# Embedding backends (pick via EMBEDDING_PROVIDER). `local` is the recommended
+# default for real semantic search: free, offline, private (no cloud round-trip
+# for your personal data).
 embeddings-local = ["sentence-transformers>=3.0.0"]
+embeddings-openai = ["openai>=1.40.0"]
 
-# Optional scalable vector stores (pick via VECTOR_STORE)
+# Optional scalable vector stores (pick via VECTOR_STORE). numpy (default) needs
+# nothing; these help only once a corpus grows large.
 store-lancedb = ["lancedb>=0.13.0", "pyarrow>=16.0.0"]
 store-chroma = ["chromadb>=0.5.0"]
 
-# Vault relational index backend: Postgres + pgvector (pick via VAULT_DB=postgres).
-# The default VAULT_DB=sqlite backend is stdlib-only and needs nothing extra.
-store-postgres = ["psycopg[binary]>=3.1.0", "pgvector>=0.2.5"]
+# Optional encryption-at-rest for the credential store (set VAULT_MASTER_KEY).
+# A local single-user setup can run without it (plaintext secrets in the
+# gitignored .vault/); enable this to encrypt them.
+crypto = ["cryptography>=42.0.0"]
 
-# Authenticated HTTP serving (Phase 2): encrypted secrets + the ASGI server.
-# (Starlette/uvicorn ship with mcp, but uvicorn is pinned here for clarity.)
-serve = ["cryptography>=42.0.0", "uvicorn>=0.30.0", "httpx>=0.27.0"]
-
-# Google connectors (Phase 4.1): OAuth consent + token refresh for read-only
-# Calendar + Gmail ingestion. google-auth-oauthlib pulls google-auth and requests;
-# the thin REST fetch layer reuses requests, so this is the only name we add.
+# Google connectors: OAuth consent + token refresh for read-only Calendar + Gmail
+# ingestion. google-auth-oauthlib pulls google-auth and requests; the thin REST
+# fetch layer reuses requests, so this is the only name we add.
 connectors-google = ["google-auth-oauthlib>=1.2.0"]
 
 # Optional PDF -> Markdown converters (pick via PDF_CONVERTER)
@@ -62,20 +53,18 @@ graphrag = ["graphrag>=0.3.0"]
 dev = ["pytest>=8.0.0"]
 
 [project.scripts]
-life-calculator = "servers.calculator.server:main"
 life-knowledge = "servers.knowledge.server:main"
 life-reindex = "scripts.reindex:main"
 life-catalog = "scripts.catalog:main"
+life-vault = "servers.vault.server:main"
 life-vault-index = "scripts.vault_index:main"
 life-vault-schedule = "scripts.vault_schedule:main"
 life-vault-sync = "scripts.vault_sync:main"
 life-vault-import = "scripts.vault_import:main"
-life-vault-web = "scripts.vault_web:main"
-life-vault = "servers.vault.server:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["servers", "servers.calculator", "servers.knowledge", "servers.vault", "scripts"]
+packages = ["servers", "servers.knowledge", "servers.vault", "scripts"]

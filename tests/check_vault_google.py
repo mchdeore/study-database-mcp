@@ -142,6 +142,7 @@ result = google_fetch.calendar_fetch_fn(None, token_provider=fake_token, http_ge
 ok(len(result.items) == 3, "internal pageToken paging pulled all 3 events in one fetch")
 ok(result.next_cursor == "SYNC-1", "the nextSyncToken becomes the persisted cursor")
 ok(any(p.get("timeMin") for _, p in calls), "the initial pull is bounded by timeMin")
+ok(any(p.get("timeMax") for _, p in calls), "the initial pull is bounded by timeMax (future cap)")
 
 caught_up = google_fetch.calendar_fetch_fn("SYNC-1", token_provider=fake_token, http_get=fake_http_get)
 ok(caught_up.items == [] and caught_up.next_cursor == "SYNC-1",

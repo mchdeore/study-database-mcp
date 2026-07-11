@@ -1,12 +1,41 @@
 # Life Vault MCP — Vision & Scope
 
-> **Scope update (current):** the project is now a lean, local **Life MCP** —
-> a Markdown vault back end + Google Calendar timeline + a knowledge Librarian,
-> served to Claude/Cowork over **MCP stdio only**. Several pieces described in the
-> older vision docs are **descoped** (kept here as history / a documented upgrade
-> path): the calculator + study-math server, the HTTP web dashboard + bearer auth,
-> Docker deployment, and the Postgres+pgvector backend. SQLite is the single
-> backend. See the repo `README.md` for the live scope.
+> # ⭐ CURRENT TRUTH (2026-07-10) — read this first
+>
+> There have been **two scope phases**, and this banner is the authoritative record
+> of which is current:
+>
+> **Phase A — "lean local MCP" (the code as-built):** a Markdown vault + Google
+> Calendar + a knowledge Librarian, served over **MCP stdio**, SQLite backend, local
+> embeddings, ~$0/mo. Docs 01–14 describe this. Several things were descoped here
+> (calculator/study-math server, HTTP dashboard + bearer auth, Docker, Postgres+pgvector).
+>
+> **Phase B — "the super-tool" (current direction, `15-database-ai-architecture.md`):**
+> the user has **deliberately re-expanded** the vision. This is now the target. Where B
+> conflicts with A, **B wins and A is history.** Key decisions locked 2026-07-10:
+>
+> - **Two-model MCP:** a frontier model (Opus) sends the backend a JSON query spec; a
+>   cheap backend model on a **Mac mini** does graph-RAG + returns cited payloads.
+> - **Quality-first embeddings (NOT local-only, NOT $0):** OpenAI `text-embedding-3-large`
+>   for **all** content (user is not privacy-constrained). **~$10/mo budget cap**
+>   (embeddings + LLM). See updated `10-cost.md`.
+> - **Primary use case = exam prep:** "help me study for the test in course X, it covers
+>   concept Z — go." Retrieval is optimized around this (`test → covers → topic →
+>   definition/formula/problem`). See doc 15 §3a.
+> - **Remote access is back on the table:** hosted on the Mac mini, reached via
+>   **Tailscale + bearer token** (the `09-hosting-auth.md` design — no longer "stdio only").
+> - **New capabilities:** queueable **automations** (registered scripts), a backend
+>   **proposing-librarian** agent, identity/**version chains** (`supersedes`/`might_copy`),
+>   finance via **Plaid** (no credential auto-login), a reflective health/mood journal.
+> - **Priority #1 is retrieval quality** — and the design is settled in
+>   **`16-retrieval-and-tagging.md`**: density lives in **intrinsic open-vocabulary
+>   multi-field chunk tags** + embeddings, with an **emergent, self-maintaining concept
+>   index** (synonyms merged by geometry + learned from usage). Relations stay **minimal**.
+>   No fixed glossary, no blanket chunk-to-chunk semantic graph. Everything else stays
+>   simple until a real need forces more.
+>
+> The **code today is still Phase A**; Phase B is the roadmap, not yet built. Tags in
+> doc 15 mark `[exists]` vs `[new]`. When in doubt, doc 15 + this banner are the truth.
 
 This folder is the historical **vision** for turning the original study-database
 MCP into a self-hosted personal knowledge system. It ingests files and connected
@@ -56,6 +85,8 @@ AI client (Claude, etc.) can read and write your life-context from any device.
 | `12-open-questions.md` | Decisions log + remaining forks |
 | `13-build-plan.md` | **Step-by-step build tracker** (start here to build) |
 | `14-prior-art.md` | Reference projects studied + what we borrow, mapped to plan steps |
+| `15-database-ai-architecture.md` | **Two-model MCP retrieval + backend-AI, feature superset, identity/version chains** (2026-07-10 design session; re-expands scope) |
+| `16-retrieval-and-tagging.md` | **THE retrieval design** — open-vocab multi-field chunk tagging + emergent self-maintaining concept index + minimal relations (2026-07-10; authoritative for retrieval, supersedes doc 15 §3 there) |
 
 ## Decisions locked (2026-06-29)
 

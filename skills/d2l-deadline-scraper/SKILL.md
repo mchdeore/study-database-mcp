@@ -19,6 +19,50 @@ as a Markdown document that satisfies `data/incoming/school/README.md`, and rank
 the courses by urgency. This skill is **re-runnable**: run it any time to refresh
 the school drop-folder.
 
+> **Read `D2L-TERRAIN-MAP.md` (in this folder) first.** It maps every course's nav,
+> content-tree depth, external sites, and exactly *where instructors hide info*
+> (the "crevices"). Plan each run off that map instead of guessing.
+
+## Tiered scrape modes — pick the smallest one that fits the ask
+
+Don't always run the full pass. Match the tier to what the user wants; a monolithic
+scrape is slow and shallow. Each tier reuses the procedures below — it just changes
+*scope and depth*.
+
+### Tier 1 — Daily pulse (cheap, ~2 min, all courses)
+What *changed* today. Per course: announcements page (newest-first) + Calendar List
+view + dropbox due/submission status. No deep reading. Output: only new/changed items
++ a one-line "what's new / urgent." Good for a scheduled morning check.
+
+### Tier 2 — Weekly sweep (medium, all courses)
+The standard pass in the procedure below: announcement **bodies**, dropbox, quizzes,
+content module list, Course Schedule count — per course. Catches new content, modules,
+grade postings. Run ~2×/week. Refresh `_digest.md`.
+
+### Tier 3 — Deep dig (heavy; the "crevices" tier; rotate courses)
+Goes after buried info (see terrain map §"crevices"). Per course in the rotation:
+- **Course outline** (outline.uwaterloo.ca, Duo) — one-time/term, re-check for edits.
+- **Crowdmark** — every graded paper, **per-question feedback + where marks were lost**
+  (weak-spot mining). Sign in with LEARN (SSO).
+- **Expand every Content module/submodule**; open **Web-page items**, formula sheets,
+  exam-related modules, Rubrics, Checklists.
+- **Grades** page (weights + returned). **Discussions**. **Piazza** (263). Announcement
+  bodies read in full, oldest→newest.
+- **Email deep-scan** filtered to instructor addresses (real deadline changes / exam hints).
+Depth over breadth: do **1–2 courses per run** so each gets a thorough crawl; rotate so
+every course gets a deep pass every ~2 weeks. **Rotation order = by fear weight + nearest
+upcoming test first** (scary courses and near exams get the thorough crawl earliest).
+
+### Tier 4 — Pre-test trigger (on-demand / ~5 days before a calendar test)
+Focused single-course dig for an upcoming test: coverage, past tests + Crowdmark weak
+spots, review sessions, formula sheet → produce/refresh a study guide (scope + checklist,
+filed per the study-assistant convention in `~/Documents/SCHOOL/<COURSE>/`).
+
+*(Suggested cadence if scheduled: Tier 1 daily AM · Tier 2 Sun+Wed · Tier 3 every other
+Sun, rotating · Tier 4 auto ~5 days before each test. Nothing is scheduled unless the
+user asks.)*
+
+
 ## What you produce (end state)
 
 - `data/incoming/school/<course-code>/` — one lowercase folder per enrolled course.

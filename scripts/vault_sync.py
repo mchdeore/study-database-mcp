@@ -2,6 +2,7 @@
 
     python scripts/vault_sync.py --status              # per-source cursors (offline)
     python scripts/vault_sync.py --setup               # one-time Google OAuth consent
+    python scripts/vault_sync.py --preview             # Gmail triage preview (writes nothing)
     python scripts/vault_sync.py --calendar            # sync Google Calendar (incremental)
     python scripts/vault_sync.py --gmail --full        # full resync Gmail
     python scripts/vault_sync.py --calendar --gmail    # sync both
@@ -29,6 +30,8 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Sync connectors into the vault (incremental).")
     parser.add_argument("--status", action="store_true", help="show per-source sync cursors")
     parser.add_argument("--setup", action="store_true", help="run the one-time Google OAuth consent")
+    parser.add_argument("--preview", action="store_true",
+                        help="read-only Gmail triage preview (classify, write nothing)")
     parser.add_argument("--calendar", action="store_true", help="sync Google Calendar")
     parser.add_argument("--gmail", action="store_true", help="sync Gmail")
     parser.add_argument("--full", action="store_true", help="full resync (ignore the saved cursor)")
@@ -57,6 +60,20 @@ def main() -> None:
 
         try:
             _emit(google_auth.run_consent())
+        except Exception as error:  # noqa: BLE001
+            _emit({"error": f"{type(error).__name__}: {error}"})
+        return
+
+    if args.preview:
+        from servers.vault.connectors import google_auth
+
+        if not google_auth.status()["ready"]:
+            _emit({"error": "Google is not fully authorized yet.", "status": google_auth.status()})
+            return
+        from servers.vault.connectors import google_fetch
+
+        try:
+            _emit({"gmail_preview": google_fetch.live_gmail_preview()})
         except Exception as error:  # noqa: BLE001
             _emit({"error": f"{type(error).__name__}: {error}"})
         return

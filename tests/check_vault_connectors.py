@@ -7,9 +7,11 @@ OAuth or network. Verifies:
   4.2 transform    - a Google Calendar event dict maps to the right note fields
   4.2 sync         - events become notes under the calendar category + `events` rows
   4.2 events       - the derived events table carries start/end and the doc id
-  4.3 gmail        - a message maps to a note in the ephemeral mail category with a
-                     TTL; label filtering excludes non-matching mail; an expired
-                     mail note is archived by the existing TTL policy
+  4.3 gmail        - a keeper maps to a clean, importance-scored note in the mail
+                     category with a class-based TTL; label filtering excludes
+                     non-matching mail; an expired mail note is archived by the TTL
+                     policy; the triage policy skips promotions and rolls bulk/list
+                     mail into a weekly digest (per-class counts in the report)
   4.5 dedup        - re-syncing the SAME event updates its note in place (no dup);
                      an unchanged re-sync is a no-op
   skip rules       - cancelled events and events with no start are skipped
@@ -207,6 +209,27 @@ ok(database.get_document(mail_id)["status"] == "active", "mail is active before 
 archive.run_ttl(dry_run=False, database=database)
 ok(database.get_document(mail_id)["status"] == "archived",
    "an expired mail note is archived by the TTL policy (ephemeral by default)")
+
+# --- 4.3 gmail triage policy (skip noise, digest bulk, per-class report) ----
+print("4.3 gmail triage policy")
+PROMO = {"id": "msg-promo", "labelIds": ["INBOX", "CATEGORY_PROMOTIONS"],
+         "snippet": "25% off flights", "payload": {"headers": [
+             {"name": "Subject", "value": "Discount Tuesday"}]}}
+ALERT = {"id": "msg-alert", "labelIds": ["INBOX", "CATEGORY_UPDATES"],
+         "snippet": "Clio Data Scientist role", "payload": {"headers": [
+             {"name": "Subject", "value": "Data Scientist at Clio"},
+             {"name": "From", "value": "LinkedIn Job Alerts <jobalerts-noreply@linkedin.com>"},
+             {"name": "List-Unsubscribe", "value": "<https://linkedin.com/unsub>"}]}}
+triage = gmail.sync_messages([PROMO, ALERT], now=datetime(2026, 7, 8, tzinfo=timezone.utc),
+                             database=database)
+ok(triage["classes"].get("promotion") == 1 and triage["classes"].get("bulk") == 1,
+   "sync_messages reports a per-class breakdown (promotion + bulk)")
+ok(database.find_document_by_source_ref("gmail://msg/msg-promo") is None,
+   "the promotion is skipped -- never written to the vault")
+ok(triage["digested"] == 1 and len(triage["digests"]) == 1,
+   "the bulk job alert is rolled into a weekly digest, not its own note")
+ok(database.find_document_by_source_ref("gmail://digest/2026-W28") is not None,
+   "the weekly digest note exists (bulk mail aggregated)")
 
 
 database.close()

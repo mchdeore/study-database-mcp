@@ -70,8 +70,9 @@ class CalendarConnector:
 @dataclass
 class GmailConnector:
     fetch_fn: Callable[[Optional[str]], FetchResult]
-    ttl_days: float = gmail_mod.DEFAULT_TTL_DAYS
+    ttl_days: Optional[float] = None  # None = per-class triage retention (recommended)
     label_filter: Optional[str] = None
+    digest: bool = True               # roll bulk/list mail into a weekly digest note
     name: str = "gmail"
 
     def fetch(self, cursor: Optional[str]) -> FetchResult:
@@ -79,7 +80,8 @@ class GmailConnector:
 
     def ingest(self, items: List[Dict[str, Any]], database: VaultDB) -> Dict[str, Any]:
         return gmail_mod.sync_messages(
-            items, ttl_days=self.ttl_days, label_filter=self.label_filter, database=database
+            items, ttl_days=self.ttl_days, label_filter=self.label_filter,
+            digest=self.digest, database=database,
         )
 
 

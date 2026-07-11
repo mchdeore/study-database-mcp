@@ -44,7 +44,17 @@ planning figures (verify current pricing before relying on them).
 
 ## Chosen posture (decided)
 
-- **Embeddings: local** (bge), free. Search: free.
+- **Embeddings — DECISION (2026-07-10, finalized): OpenAI `text-embedding-3-large`
+  for ALL content.** The user wants *damn-accurate retrieval on everything* (the whole
+  point of the DB) and is **not privacy-constrained** ("least private person") — so **no
+  hybrid split**: one embedder everywhere, including finance/personal. Simpler and best
+  accuracy. `~$0.13/1M tokens`; full re-embed of the current corpus (~5,200 chunks, a few
+  M tokens) ≈ **$1–2 one-time**, incremental after that is cents (content-hash gated).
+  Embeddings barely touch the **~$10/mo total budget** — the LLM roles below are the real
+  spend. (Local `bge` remains available as a free fallback only if the user ever wants to
+  drop under budget; not the default.) Note: exact term/definition lookup still leans on
+  lexical/heading match + verbatim `get_section` (deterministic, free); the strong
+  embedder powers the *fuzzy* semantic half.
 - **Server-side LLM: a hybrid "librarian",** budget-capped. Split by role so the
   reliability premium is paid only where it counts:
   - **Extraction (bulk, cost-first): DeepSeek V4 Flash** ($0.14/$0.28 per 1M,
@@ -67,7 +77,11 @@ planning figures (verify current pricing before relying on them).
 - GPUs (~14GB total) handle local embeddings + local OCR + an optional local
   re-ranker, all free. Cloud spend is only the DeepSeek batch/agentic jobs.
 
-Net: near-$0/month steady state. The only spend is the capped librarian calls for
-batch tidying and (later) agentic context-packing — bounded, auditable, never by
-surprise. Agentic RAG is designed to *reduce* total spend across your main models
-by shrinking their input tokens.
+Net (UPDATED 2026-07-10): the steady state is **no longer ~$0** — the user opted into
+quality. Target: **~$10/month total cap** covering OpenAI-large embeddings (cents) +
+the DeepSeek/Kimi librarian calls (~$1–3/mo incremental) with comfortable headroom.
+One-time full index (embeddings + GraphRAG extraction) ≈ **$5–7**. Everything stays
+**budget-capped and auditable** via `.vault/budget.config.yaml` — paid calls refuse
+past the cap. Agentic RAG still *reduces* total spend across your main client models by
+shrinking their input tokens. Local `bge`/Ollama remain the free fallbacks if you ever
+want to drop back under budget.

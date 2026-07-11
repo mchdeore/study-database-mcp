@@ -87,11 +87,17 @@ read-only scopes only. One-time setup:
    (`google_oauth_client_id`, `google_oauth_client_secret`).
 3. Grant consent: `python scripts/vault_sync.py --setup` (opens a browser once).
 4. Sync: `python scripts/vault_sync.py --calendar --gmail` (or the `sync_google`
-   tool). Check `google_auth_status` / `--status` any time.
+   tool). Preview Gmail first with `--preview` / the `preview_gmail` tool. Check
+   `google_auth_status` / `--status` any time.
 
-Calendar events land in `40-areas/calendar/`; Gmail lands in an ephemeral
-`50-resources/mail/` with a TTL (unpinned mail auto-archives). Gmail is a
-firehose — narrow `GOOGLE_GMAIL_QUERY` (e.g. `is:important`, `newer_than:7d`).
+Calendar events land in `40-areas/calendar/`. Gmail is a firehose, so it is
+**triaged, not mirrored**: each message is classified from its headers/labels and
+either kept as its own clean, importance-scored note (starred/important/personal),
+rolled into **one weekly digest note** (newsletters, job alerts, list mail), or
+skipped entirely (promotions, social, drafts). All of it lands in an ephemeral
+`50-resources/mail/` with class-based TTLs (unpinned mail auto-archives; starred
+keepers don't expire). Tune what's fetched with `GOOGLE_GMAIL_QUERY` and inspect
+the plan with `preview_gmail` before syncing.
 
 ## Register with Claude Desktop / Cowork
 
@@ -117,6 +123,7 @@ Offline self-checks (no deps beyond the core install, no network):
 .venv/bin/python tests/check_catalog.py          # SCHOOL catalog: dedup, naming, rescan
 .venv/bin/python tests/check_vault_google.py     # Google OAuth + live-fetch wiring (mocked)
 .venv/bin/python tests/check_vault_connectors.py # connector sync/cursor contract
+.venv/bin/python tests/check_vault_mail_triage.py # Gmail triage: classify · clean · digest
 .venv/bin/python tests/check_vault_hybrid.py     # hybrid vector + lexical retrieval
 ```
 

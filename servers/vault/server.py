@@ -335,14 +335,23 @@ def setup_google() -> dict:
 
 
 @app.tool()
-def sync_google(calendar: bool = True, gmail: bool = True, full: bool = False) -> dict:
+def sync_google(calendar: bool = True, gmail: bool = True, full: bool = False,
+                gmail_query: str = "") -> dict:
     """Sync Google Calendar and/or Gmail into the vault (incremental by default).
 
     Pulls events/messages via the read-only Google APIs and upserts them as Markdown
     notes deduped by source_ref (re-syncing updates in place, never duplicates).
-    Calendar → 40-areas/calendar/; Gmail → ephemeral 50-resources/mail/ with a TTL.
-    `full=True` ignores the saved cursor and re-pulls from the start. Requires Google
-    authorization (see google_auth_status / setup_google). Returns per-source reports.
+    Calendar → 40-areas/calendar/. Gmail is a firehose, so it is TRIAGED, not
+    mirrored: each message is classified from its headers/labels and either
+      • kept as its own clean, importance-scored note (starred/important/personal),
+      • rolled into ONE weekly digest note (newsletters, job alerts, list mail), or
+      • skipped entirely (promotions, social, drafts) — counted but not written.
+    The per-source report includes a `classes` breakdown (e.g. promotion/bulk/
+    personal counts) and the `digests` touched, so you see the whole inbox shape
+    without 400 notes landing. TIP: call `preview_gmail` first to see counts before
+    syncing, and pass `gmail_query` (a Gmail search like "is:important newer_than:7d")
+    to narrow this run. `full=True` ignores the saved cursor and re-pulls from start.
+    Requires Google authorization (see google_auth_status / setup_google).
     """
     from servers.vault.connectors import google_auth
 
@@ -359,10 +368,42 @@ def sync_google(calendar: bool = True, gmail: bool = True, full: bool = False) -
         if calendar:
             reports.append(run_sync(google_fetch.live_calendar_connector(), full=full))
         if gmail:
-            reports.append(run_sync(google_fetch.live_gmail_connector(), full=full))
+            connector = google_fetch.live_gmail_connector(query=gmail_query or None)
+            reports.append(run_sync(connector, full=full))
     except Exception as error:  # noqa: BLE001
         return {"error": f"{type(error).__name__}: {error}", "partial": reports}
     return {"synced": reports}
+
+
+@app.tool()
+def preview_gmail(query: str = "") -> dict:
+    """Read-only triage preview of your Gmail — classify without writing anything.
+
+    Fetches a batch of message metadata (headers/labels only — never bodies) for
+    `query` (defaults to the configured GOOGLE_GMAIL_QUERY; pass a Gmail search like
+    "is:important newer_than:7d" to explore) and returns the plan a real sync WOULD
+    apply, so you can decide before ingesting:
+      - `classes`: message count per class (starred/important/personal/bulk/
+        promotion/social/excluded);
+      - `actions`: how many would be kept / digested / skipped;
+      - `keepers`: the individual notes that would be created (subject, from, date,
+        class, importance), capped for token budget (`keepers_truncated` if capped);
+      - `digest_weeks`: bulk mail grouped by the ISO week it would roll into.
+    This writes NOTHING to the vault and needs Google authorization
+    (see google_auth_status). Use it to pick a good `gmail_query` for sync_google.
+    """
+    from servers.vault.connectors import google_auth
+
+    if not google_auth.status()["ready"]:
+        return {"error": "Google is not authorized yet. Store the OAuth client id/secret "
+                         "with set_credential, then run setup_google.",
+                "status": google_auth.status()}
+
+    from servers.vault.connectors import google_fetch
+    try:
+        return google_fetch.live_gmail_preview(query=query or None)
+    except Exception as error:  # noqa: BLE001
+        return {"error": f"{type(error).__name__}: {error}"}
 
 
 @app.tool()

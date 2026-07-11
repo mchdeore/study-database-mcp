@@ -55,7 +55,8 @@ We're succeeding if all of these stay true:
   it.
 - **Anywhere test:** You can query and capture from your phone over the
   authenticated API, securely, without exposing the box to the open internet.
-- **Cost test:** Monthly spend is known, bounded, and mostly $0 (local-first).
+- **Cost test:** Monthly spend is known, bounded, and **capped (~$10/mo target as of
+  2026-07-10 — quality-first, not $0; see `10-cost.md` + the README CURRENT TRUTH banner).**
 
 ## Relationship to the current project
 

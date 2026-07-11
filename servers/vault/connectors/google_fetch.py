@@ -148,9 +148,14 @@ def calendar_fetch_fn(
 # --- Gmail -----------------------------------------------------------------
 
 def _gmail_query() -> str:
-    # Default bounds the FIRST sync so we don't drag years of mail into an ephemeral
-    # folder. Narrow further (e.g. "is:important", "is:starred") via the env knob.
-    return os.environ.get("GOOGLE_GMAIL_QUERY", "newer_than:30d").strip()
+    # Default bounds the FIRST sync AND drops the two biggest noise buckets
+    # (Promotions + Social) server-side, for free, before we fetch anything — the
+    # cheapest possible data reduction. The ingest-time triage policy still runs on
+    # whatever remains. Narrow further (e.g. "is:important", "is:starred") via the
+    # env knob; the triage policy classifies whatever the query lets through.
+    return os.environ.get(
+        "GOOGLE_GMAIL_QUERY", "-category:promotions -category:social newer_than:30d"
+    ).strip()
 
 
 # List message ids matching the query (+ after: watermark), paging internally.
@@ -178,7 +183,12 @@ def _gmail_list_ids(
 
 # Gmail fetch_fn: `(cursor) -> FetchResult`. cursor is an epoch-seconds watermark;
 # we list matching ids since it, then fetch each message's metadata (headers +
-# snippet + labelIds — enough for the ephemeral mail note; no MIME body decode).
+# snippet + labelIds + internalDate — enough for the triage policy; no MIME body
+# decode). We request the RFC list headers (List-Unsubscribe/List-Id) too so the
+# classifier can spot bulk/newsletter mail the way mail providers do.
+_METADATA_HEADERS = ["Subject", "From", "Date", "List-Unsubscribe", "List-Id"]
+
+
 def gmail_fetch_fn(
     cursor: Optional[str],
     *,
@@ -201,7 +211,7 @@ def gmail_fetch_fn(
         messages.append(http_get(
             f"{_GMAIL_BASE}/users/me/messages/{message_id}",
             token,
-            {"format": "metadata", "metadataHeaders": ["Subject", "From", "Date"]},
+            {"format": "metadata", "metadataHeaders": _METADATA_HEADERS},
         ))
 
     # Advance the watermark to now. run_sync's empty-page guard stops the loop on the
@@ -219,10 +229,27 @@ def live_calendar_connector(*, calendar_id: str = "primary") -> CalendarConnecto
 
 
 def live_gmail_connector(
-    *, ttl_days: float = gmail_mod.DEFAULT_TTL_DAYS, label_filter: Optional[str] = None
+    *,
+    ttl_days: Optional[float] = None,
+    label_filter: Optional[str] = None,
+    digest: bool = True,
+    query: Optional[str] = None,
 ) -> GmailConnector:
     return GmailConnector(
-        fetch_fn=lambda cursor: gmail_fetch_fn(cursor),
+        fetch_fn=lambda cursor: gmail_fetch_fn(cursor, query=query),
         ttl_days=ttl_days,
         label_filter=label_filter,
+        digest=digest,
     )
+
+
+# Live, read-only triage preview: fetch a batch of message metadata for `query`
+# (defaults to the configured GOOGLE_GMAIL_QUERY; ignores the saved cursor so it's
+# a fresh look) and return the classify-only plan (`gmail.plan_messages`). Writes
+# nothing — this backs the `preview_gmail` MCP tool so an LLM can see the shape of
+# the inbox (per-class counts, keepers) in one cheap call before syncing.
+def live_gmail_preview(*, query: Optional[str] = None) -> Dict[str, Any]:
+    result = gmail_fetch_fn(None, query=query)
+    plan = gmail_mod.plan_messages(result.items)
+    plan["query"] = _gmail_query() if query is None else query
+    return plan
